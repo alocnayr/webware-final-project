@@ -12,7 +12,6 @@ const bcrypt = require('bcrypt');
 
 app.use(express.json());
 app.use(require('express-session')({ secret: process.env.SESSION_ID, resave: true, saveUninitialized: true }));
-// app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
 connectToDatabase();
@@ -31,19 +30,6 @@ app.get('/session', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    // TODO 
-    // Check if user exists on DB
-    // Add user to mongoDB if user doesn't already exist
-    // Otherwise return an error
-
-    // const dataAsJson = {
-    //     username: req.body.username,
-    //     email: req.body.email,
-    //     password: req.body.password,
-    // }
-    // console.log(dataAsJson);
-    // res.sendStatus(200);
-
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
 
@@ -72,19 +58,6 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    // TODO
-    // Check if user password matches password on db
-
-
-
-    // const dataAsJson = {
-    //     email: req.body.email,
-    //     password: req.body.password,
-    // }
-
-    // console.log(dataAsJson);
-    // res.sendStatus(200);
-
     const userEmail = req.body.email;
 
     const findUser = await usersDB.collection('data').findOne({ email: userEmail });
@@ -135,20 +108,23 @@ app.post('/login', async (req, res) => {
 
 app.post('/add-favorite-location', async (req, res) => {
 
+    console.log("This is the user id!");
     console.log(userId);
     const locationName = req.body.locationName;
+    console.log("This is the location name");
+    console.log(locationName);
 
     try {
-        const user = await UserModel.findOne({ email: userId });
-
+        const user = await usersDB.collection('data').findOne({ email: userId });
+        console.log("This is the user");
+        console.log(user);
         if (user) {
-            if (!user.favoriteLocations.includes(locationName)) {
-                user.favoriteLocations.push(locationName);
-                await user.save();
-                res.sendStatus(200);
-            } else {
-                res.sendStatus(400);
-            }
+            user.favoriteLocations.push(locationName);
+            usersDB.collection('data').findOneAndUpdate({ email: userId }, { $set: user });
+            const user2 = await usersDB.collection('data').findOne({ email: userId });
+            console.log("user after updating favorite locations");
+            console.log(user2);
+            res.sendStatus(200);
         } else {
             res.sendStatus(404);
         }
@@ -159,16 +135,16 @@ app.post('/add-favorite-location', async (req, res) => {
 });
 
 app.post('/remove-favorite-location', async (req, res) => {
-    if (!req.session.user) {
-        res.sendStatus(401);
-        return;
-    }
+    // if (!req.session.user) {
+    //     res.sendStatus(401);
+    //     return;
+    // }
 
-    const userId = req.session.user;
+    // const userId = req.session.user;
     const locationName = req.body.locationName;
 
     try {
-        const user = await UserModel.findOne({ email: userId });
+        const user = await usersDB.collection('data').findOne({ email: userId });
 
         if (user) {
             if (user.favoriteLocations.includes(locationName)) {
@@ -191,15 +167,15 @@ app.post('/remove-favorite-location', async (req, res) => {
 });
 
 app.get('/get-favorite-locations', async (req, res) => {
-    if (!req.session.user) {
-        res.sendStatus(401);
-        return;
-    }
+    // if (!req.session.user) {
+    //     res.sendStatus(401);
+    //     return;
+    // }
 
-    const userId = req.session.user;
+    // const userId = req.session.user;
 
     try {
-        const user = await UserModel.findOne({ email: userId });
+        const user = await usersDB.collection('data').findOne({ email: userId });
 
         if (user) {
             res.json(user.favoriteLocations);
